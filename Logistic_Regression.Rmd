@@ -4,6 +4,7 @@ author: "Calvin Skalla"
 date: "3/17/2020"
 output: html_document
 ---
+$TSO_2$ = $(SO_2)/10^(`pH`-1.81)+1$
 
 # Data Exploration and Cleaning
 ```{r}
