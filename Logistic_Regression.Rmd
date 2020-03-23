@@ -42,7 +42,7 @@ RW.LR.pred[RW.LR.probs>0.5] = "good"
 table(RW.LR.pred, RW_LR_data$like)
 mean(RW.LR.pred==RW_LR_data$like)
 
-#summary(WW.LR.fit)
+summary(WW.LR.fit)
 #plot(WW.LR.fit)
 WW.LR.probs = predict(WW.LR.fit, type = "response")
 WW.LR.pred = rep("bad", 4898)
@@ -56,19 +56,6 @@ residual.sugar~density = Correlation of 0.84
 total.sulfur.dioxide~free.sulfur.dioxide = correlation of 0.62
 total.sulfur.dioxide~density = correlation of 0.53
 density~alcohol = correlation of -0.78
-
-Order of Correlation for Quality
-alcohol 
-density
-chlorides
-volatile.acidity
-total sulfur
-fixed acidity
-pH
-residual sugar
-sulphates
-citric acid
-free sulfur
 
 # Second Model 
 ## First Model Shrunk w/ with Significant Variables Only
