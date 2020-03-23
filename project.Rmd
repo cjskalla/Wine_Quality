@@ -5,7 +5,7 @@ date: "3/21/2020"
 output: html_document
 ---
 # Exploring Red and White Wine Data from Portugal
-For this data visualization project, We will look at an array of wine samples quality varying based on their physiochemical makeup. We plan to create visualizations to point out major differences between white and red wines.  Variables given in grams per liter. 
+For this data visualization project, we will look at a variety of wine sample quality scores and their variance compared to their physiochemical makeups. We plan to create visualizations to point out major differences between white and red wines.  Variables are given in grams per liter. 
 ```{r, echo=FALSE, message=FALSE}
 #Importing White Wine and Wrangling
 library(knitr)
