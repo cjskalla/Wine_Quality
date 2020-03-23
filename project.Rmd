@@ -18,7 +18,6 @@ library(dplyr)
 library(ggplot2)
 library(rmarkdown)
 library(kableExtra)
-library(tidyverse)
 white_raw <- read.csv("winequality-white.csv", sep = ";")
 colnames(white_raw) = c("Fixed Acidity", "Volatile Acidity", "Citric Acid", "Residual Sugar", "Chlorides", "Free Sulfur Dioxide", "Total Sulfur Dioxide", "Density", "pH", "Sulfites", "Alcohol", "Quality")
 white <- white_raw[, c(12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)]
@@ -42,22 +41,23 @@ colnames(red_w_mean_num) = c("Sample Number", "Quality","Fixed Acidity", "Volati
 summary(white$Density)
 ```
     
-Variable                   Description
---------                   -----------
-`Sample Number`            Number given to each invdividual wine sample
-`Quality`                  Rating score on the quality of wine from 1-10
-`Fixed Acidity`            Amount of acid from the grapes in grams per liter
-`Volatile Acidity`         Amount of distillable acid in the wine in grams per liter
-`Citric Acid`              Amount of citric acid present to add flavor in grams per liter
-`Residual Sugar`           Leftover sugar from grapes after alcohol fermentation in grams per liter
-`Chlorides`                Amount of salt in the wine in grams per liter
-`Free Sulfur Dioxide`      Amount of $SO_2$ not bound to other molecules in milligrams per liter
-`Total Sulfur Dioxide`     Amount of $TSO_2$ is portion of free $SO_2$ and the portion bounded to the other chemicals in the wine in milligrams per liter
-`Density`                  Mass of dissolved solids per volume in grams/$cm^3$ 
-`pH`                       Measure of relative acidity vs. relative alkalinity of any liquid on a scale from 0-14
-`sulfites`                 Amount of preservative ($SO_2$) for antioxidant and antibacterial properties in grams per liter
-`Alcohol`                  Percent of alcohol content in the wine sample
-
+Variable               Description
+--------               -----------
+`Sample Number`        Number given to each invdividual wine sample
+`Quality`              Rating score on the quality of wine from 1-10
+`Fixed Acidity`        Amount of acid from the grapes in grams per liter
+`Volatile Acidity`     Amount of distillable acid in the wine in grams per liter
+`Citric Acid`          Amount of citric acid present to add flavor in grams per liter
+`Residual Sugar`       Leftover sugar from grapes after alcohol fermentation in grams per liter
+`Chlorides`            Amount of salt in the wine in grams per liter
+`Free Sulfur Dioxide`  Amount of $SO_2$ not bound to other molecules in milligrams per liter
+`Total Sulfur Dioxide` Portion of free $SO_2$ plus the portion bounded to the other chemicals in milligrams per liter
+`Density`              Mass of dissolved solids per volume in grams/$cm^3$ 
+`pH`                   Measure of relative acidity vs. relative alkalinity of any liquid on a scale from 0-14
+`sulfites`             Amount of preservative ($SO_2$) for antioxidant and antibacterial properties in grams per liter
+`Alcohol`              Percent of alcohol content in the wine sample
+--------               ------------
+***
 
 > <details>
   <summary> Correlation of each variable with Quality </summary>

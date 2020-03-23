@@ -37,9 +37,9 @@ colnames(wine_dist) = c("Quality", "White", "Red")
 kbl <- knitr::kable(wine_dist, format = "html")
 kableExtra::kable_styling(kbl, full_width = FALSE)
 
-ggplot(wine_data, aes(x = Quality, fill = Type)) + geom_bar(position = "stack") + geom_text(aes(y = amount, data = agreggated))
+#ggplot(wine_data, aes(x = Quality, fill = Type)) + geom_bar(position = "stack") + geom_text(aes(y = agreggated$amount, data = agreggated))
 
-+ geom_text(aes(x = Quality, y = amount, label = amount), vjust = -0.25)
+#geom_text(aes(x = Quality, y = amount, label = amount), vjust = -0.25)
 
 #Works in Progress below: might delete and use density ridges instead because of readability
 ggplot(wine_data) + geom_density(aes(x = fixed.acidity, y = ..density..)) + facet_wrap(~Quality)
