@@ -6,7 +6,7 @@ output: html_document
 ---
 ### Exploring Red and White Wine Data from Portugal
 For this data visualization project, We will look at an array of wine samples. 
-Each sample was given a quality rating from 1-10, and our goal will be to create visualizations demonstrating what levels of physiochemicals produce a high quality wine. Along with that, we will analyze the differences between the red and white wines to design plots that can simply reveal their distinctions. 
+Each sample was given a quality rating from 1-10, and our goal will be to create visualizations demonstrating what levels of certain physiochemicals produce a high quality wine. Along with that, we will analyze the differences between the red and white wines to design plots that can simply reveal their distinctions. 
   
 ### Features of the Wine
 For generating our visualizations for this project, we will be using a data set from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Wine+Quality). Thankfully, this data was mined and assembled for public use by P. Cortez, A. Cerdeira, F. Almeida, T. Matos, and J. Reis. These datasets were made available to be used for regression and classification tasks: but along with that, can be used with feature selection methods to determine which variables are important in producing a high quality wine.
