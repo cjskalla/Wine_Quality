@@ -14,26 +14,51 @@ library(dplyr)
 library(knitr)
 library(ggthemes)
 library(cowplot)
+library(plyr)
+library(readr)
+library(GGally)
+library(mlbench)
+library(caret)
 
 white_wine <- read.csv("data/winequality-white.csv", sep = ";")
 red_wine <- read.csv("data/winequality-red.csv", sep = ";")
 wine_data <- rbind(white_wine, red_wine)
-WW_LR_data <- mutate(white_wine, like = as.factor(ifelse(quality >5, 1, 0))) %>% select(-quality)
+
+WW_LR_data <- mutate(white_wine, like = as.factor(ifelse(quality >5, 1, 0))) %>% select(-quality) 
+
 RW_LR_data <- mutate(red_wine, like = as.factor(ifelse(quality >5, 1, 0))) %>% select(-quality)
 
 w_train_index <- sample(1:nrow(WW_LR_data), 0.8 * nrow(WW_LR_data))
 w_test_index <- setdiff(1:nrow(WW_LR_data), w_train_index)
-
 w_train <- WW_LR_data[w_train_index, ]
 w_test <- WW_LR_data[w_test_index, ]
 ```
 
-# Subset Selection w/ full Dataset
+# Normalizing our Data with Standardization
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+preproc1 <- preProcess(WW_LR_data, method = c("center", "scale"))
+
+w_dat_stand <- predict(preproc1, WW_LR_data) 
+
+summary(w_dat_stand)
+
+```
+
+# Normalizing with min-max
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+preproc2 <- preProcess(WW_LR_data, method = c("range"))
+
+w_dat_minmax <- predict(preproc2, WW_LR_data)
+
+summary(w_dat_minmax)
+```
+
+
+# Subset Selection w/ full Dataset
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 library(leaps)
 regfit.full = regsubsets(like ~ ., WW_LR_data, nvmax = 19)
 reg.summary = summary(regfit.full)
-par(mfrow = c(2,2))
 plot(reg.summary$rss ,xlab = "Number of Variables ", ylab = "RSS",
      type = "l") + points(which.min(reg.summary$rss),
                           reg.summary$rss[which.min(reg.summary$rss)], 
@@ -64,7 +89,7 @@ reg.summary$bic
 
 # Forward and Backward Stepwise Selection
 ## Produced same results as Best Subset Selection for minimum BIC
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 regfit.fwd = regsubsets(like ∼ ., data = WW_LR_data , nvmax = 11, method ="forward")
 coef(regfit.fwd, 6)
 
@@ -76,9 +101,9 @@ coef(regfit.full, 6)
 ```
 
 # Cross Validation
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 set.seed(1)
-train = sample(c(TRUE, FALSE), nrow(WW_LR_data), rep = TRUE)
+train = sample(c(1, 0), nrow(WW_LR_data), rep = TRUE)
 test = (!train)
 
 
@@ -90,16 +115,14 @@ test.mat = model.matrix(like ~ ., data = WW_LR_data[test,])
 
 val.errors = rep(NA, 11)
 
-for(i in 1:11)
-{
-  coefi = coef(regfit.best, id = i)
-  pred = test.mat[, names(coefi)]%*%coefi
-  val.errors[i] = mean((pred - WW_LR_data[test,])^2)
-  print(val.errors)
-}
-typeof(WW_LR_data$like[test])
-typeof(pred)
-val.errors
+#for(i in 1:11)
+#{
+  #coefi = coef(regfit.best, id = i)
+  #pred = test.mat[, names(coefi)]%*%coefi
+  #val.errors[i] = mean((pred - WW_LR_data[test,])^2)
+  #print(val.errors)
+#}
+#val.errors
 ```
 
 
@@ -122,10 +145,10 @@ WW.LR.fit = glm(like ~ fixed.acidity + volatile.acidity + citric.acid
 #mean(RW.LR.pred==RW_LR_data$like)
 
 #summary(WW.LR.fit)
-plot(WW.LR.fit)
+#plot(WW.LR.fit)
 WW.LR.probs = predict(WW.LR.fit, w_test, type = "response")
-WW.LR.pred = rep("bad", 980)
-WW.LR.pred[WW.LR.probs>0.5] = "good"
+WW.LR.pred = rep(0, 980)
+WW.LR.pred[WW.LR.probs>0.5] = 1
 table(WW.LR.pred, w_test$like)
 mean(WW.LR.pred==w_test$like)
 ```
@@ -134,14 +157,14 @@ mean(WW.LR.pred==w_test$like)
 ## First model shrunk w/ with significant variables only while training on a 80% subset of the original dataset and tested on the remaining 20%
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 LR.fit2 = glm(like ~ volatile.acidity + residual.sugar + free.sulfur.dioxide + 
-                density + pH + sulphates + alcohol, data = w_train, family = binomial)
+                density + pH + sulphates + alcohol, data = w_dat_stand, family = binomial)
 #summary(LR.fit2)
 #plot(LR.fit2)
 LR.probs2 = predict(LR.fit2, w_test, type = "response")
-LR.pred2 = rep("bad", 980)
-LR.pred2[LR.probs2>0.5] = "good"
-table(LR.pred2, w_test$like)
-mean(LR.pred2==w_test$like)
+LR.pred2 = rep(0, 4898)
+LR.pred2[LR.probs2>0.5] = 1
+table(LR.pred2, w_dat_stand$like)
+mean(LR.pred2==w_dat_stand$like)
 #0.74989 Initial probability trained with full dataset
 ```
 
@@ -153,30 +176,27 @@ LR.fit3 = glm(like ~ alcohol + free.sulfur.dioxide + volatile.acidity +
 #summary(LR.fit3)
 #plot(LR.fit3)
 LR.probs3 = predict(LR.fit3, w_test, type = "response")
-LR.pred3 = rep("bad", 980)
-LR.pred3[LR.probs3>0.5] = "good"
+LR.pred3 = rep(0, 980)
+LR.pred3[LR.probs3>0.5] = 1
 table(LR.pred3, w_test$like)
 mean(LR.pred3==w_test$like)
 #0.7523 Initial probability trained with full dataset
 ```
-
-
 
 # Fourth Model
 ## Minimal BIC Model
 ## Same as Second Model
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 LR.BIC7 = glm(like ~ volatile.acidity + residual.sugar + free.sulfur.dioxide + 
-                density + pH + sulphates + alcohol , data = WW_LR_data, family =
+                density + pH + sulphates + alcohol , data = w_dat_minmax, family =
                 binomial)
 #summary(LR.fit4)
 #plot(LR.fit4)
 LR.probs4 = predict(LR.BIC7, type = "response")
-LR.pred4 = rep("bad", 4898)
-LR.pred4[LR.probs4>0.5] = "good"
-table(LR.pred4, WW_LR_data$like)
-mean(LR.pred4==WW_LR_data$like)
-#0.7498
+LR.pred4 = rep(0, 4898)
+LR.pred4[LR.probs4>0.5] = 1
+table(LR.pred4, w_dat_minmax$like)
+mean(LR.pred4==w_dat_minmax$like)
 ```
 
 # Fifth Model
@@ -187,8 +207,8 @@ LR.BIC6 = glm(like ~ volatile.acidity + residual.sugar + density + pH +
 #summary(LR.fit4)
 #plot(LR.fit4)
 LR.probsBIC = predict(LR.BIC6, w_test, type = "response")
-LR.predBIC = rep("bad", 980)
-LR.predBIC[LR.probsBIC>0.5] = "good"
+LR.predBIC = rep(0, 980)
+LR.predBIC[LR.probsBIC>0.5] = 1
 table(LR.predBIC, w_test$like)
 mean(LR.predBIC==w_test$like)
 #0.7533 Initial probability trained with full dataset
@@ -202,8 +222,8 @@ LR.fit5 = glm(like ~ volatile.acidity + residual.sugar + alcohol, data = w_train
 #summary(LR.fit4)
 #plot(LR.fit5)
 LR.probs5 = predict(LR.fit5, w_test, type = "response")
-LR.pred5 = rep(FALSE, 980)
-LR.pred5[LR.probs5>0.5] = TRUE
+LR.pred5 = rep(0, 980)
+LR.pred5[LR.probs5>0.5] = 1
 table(LR.pred5, w_test$like)
 mean(LR.pred5==w_test$like)
 #0.7545 Initial probability trained with full dataset
