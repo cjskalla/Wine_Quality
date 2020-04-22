@@ -32,10 +32,10 @@ twentypercent <- sample_frac(w_data_minmax, size = 0.20)
 
 #Scatterplot Matrices for Correlations
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
+cor(x = w_data_minmax[,1:11], y = as.numeric(w_data_minmax$quality))
 #Scatterplot Matrix demonstrating correlation between predictor variables
-ggpairs(data = twentypercent, columns = c("fixed.acidity", "volatile.acidity", "citric.acid", "residual.sugar", "chlorides", "free.sulfur.dioxide", "total.sulfur.dioxide", "density", "pH", "sulphates", "alcohol"), lower = list(continuous = wrap("points", size = 1)))
+ggpairs(data = w_data_minmax, columns = c("volatile.acidity", "citric.acid", "chlorides", "free.sulfur.dioxide", "density", "alcohol"), lower = list(continuous = wrap("points", size = 1)))
 ```
-
 
 # Chemical Distributions for each Quality
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
@@ -65,10 +65,8 @@ alcohol <- ggplot(twentypercent, aes(x = quality, y = alcohol)) + geom_violin() 
 alcohol
 ```
 
-
-
 # Coplots
-```{r}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 p1 <- ggplot(twentypercent, aes(quality, citric.acid)) +
     geom_point(size = 0.5) +
     facet_wrap(~cut_width(alcohol, width = 0.10, center = 0)) + geom_smooth()
