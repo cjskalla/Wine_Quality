@@ -86,9 +86,9 @@ typeof(alcohol_summary)
 # Density Ridges Graphs
 ## Using quality data
 ```{r, echo=FALSE, message=FALSE}
-gg5 <- ggplot(wine_data) + geom_density_ridges(aes(x = volatile.acidity, y = Quality))
+ggplot(wine_data) + geom_density_ridges(aes(x = volatile.acidity, y = Quality))
 
-gg6 <- ggplot(wine_data) + geom_density_ridges(aes(x = alcohol, y = Quality))
+ggplot(wine_data) + geom_density_ridges(aes(x = alcohol, y = Quality))
 
 ggplot(wine_data) + geom_density_ridges(aes(x = residual.sugar, y = Quality))
 
