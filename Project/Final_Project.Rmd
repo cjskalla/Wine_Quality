@@ -1,12 +1,41 @@
 ---
-title: "Final Project"
+title: "A Deep Look into Wine Samples from Portugal"
 author: "Calvin Skalla"
 date: "4/22/2020"
 output: html_document
 ---
 
-# Explaining the data
+Have you ever wondered what levels of physiochemicals will result in a high quality tasting wine? Do you know, just based off a few certain features, if a wine is red or white? Well, through this analysis, I will be demonstrating which chemicals have relationships with the quality of a wine and the key differences between red and white wines. Now, I will explain the red and white wine datasets that were provided by *UCI Machine Learning Repository*.  
+\
+<details>
+ <summary> Click to expand the variables and their descriptions </summary>
+
+Variable               Description
+--------               -----------
+`Sample Number`        Number given to each invdividual wine sample
+`Type`                 Type of wine: 1 is white & 0 is red
+`Like`                 Rating of wine: 1 is good & 0 is bad
+`Quality`              Rating score on the quality of wine
+`Fixed Acidity`        Amount of acid from the grapes
+`Volatile Acidity`     Amount of distillable acid in the wine 
+`Citric Acid`          Amount of citric acid present to add flavor
+`Residual Sugar`       Leftover sugar from grapes after alcohol fermentation 
+`Chlorides`            Amount of salt in the wine 
+`Free Sulfur Dioxide`  Amount of $SO_2$ not bound to other molecules
+`Total Sulfur Dioxide` Portion of free $SO_2$ plus the portion bounded to the other chemicals
+`Density`              Mass of dissolved solids 
+`pH`                   Measure of relative acidity vs. relative alkalinity of any liquid
+`Sulfites`             Amount of preservative ($SO_2$) for antioxidant and antibacterial properties
+`Alcohol`              Percent of alcohol content in the wine sample
+--------               ------------
+***
+
+</details>  
+\
+I was given eleven variables to differentiate the wines. These variables, listed above, offer different levels of sweetness, bitterness, and acidity for the wines. Along with the variables I scraped, I created two additional columns for our analysis. When combining the red and white wine datasets, I mutated a `type` column to distinguish a 1 as a white wine and a 0 for a red wine. Then to interpret `quality` a little simpler, I created a binary `like` variable resulting in a 1 with `quality` greater than 5 and a 0 with `quality` less than or equal to 5.  
+\
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Explaining the data
 library(dplyr)
 library(ggplot2)
 library(caret)
@@ -20,10 +49,10 @@ white <- read.csv("data/winequality-white.csv", sep = ";")
 red <- read.csv("data/winequality-red.csv", sep = ";")
 
 #Combining and Clarifying Type
-wine <- rbind(white, red) %>% tibble::rowid_to_column("ID") %>% mutate(Type = ifelse(ID <= 4898, 1, 0)) %>% select(-ID)
+wine <- rbind(white, red) %>% tibble::rowid_to_column("ID") %>% mutate(type = ifelse(ID <= 4898, 1, 0), like = ifelse(quality > 5, 1, 0)) %>% select(-ID)
 
 #Making quality a factor for easier visualization
-wine$quality <- as.factor(wine$quality)
+wine$quality <- as.numeric(wine$quality)
 
 #Finding Outliers and Removing them
 
@@ -34,25 +63,22 @@ wine_minmax <- predict(preproc2, wine)
 #Subsetting dataset for easier visualizations
 twentypercent <- sample_frac(wine_minmax, size = 0.20)
 ```
-
-Variable               Description
---------               -----------
-`Sample Number`        Number given to each invdividual wine sample
-`Quality`              Rating score on the quality of wine from 1-10
-`Fixed Acidity`        Amount of acid from the grapes in grams per liter
-`Volatile Acidity`     Amount of distillable acid in the wine in grams per liter
-`Citric Acid`          Amount of citric acid present to add flavor in grams per liter
-`Residual Sugar`       Leftover sugar from grapes after alcohol fermentation in grams per liter
-`Chlorides`            Amount of salt in the wine in grams per liter
-`Free Sulfur Dioxide`  Amount of $SO_2$ not bound to other molecules in milligrams per liter
-`Total Sulfur Dioxide` Portion of free $SO_2$ plus the portion bounded to the other chemicals in milligrams per liter
-`Density`              Mass of dissolved solids per volume in grams/$cm^3$ 
-`pH`                   Measure of relative acidity vs. relative alkalinity of any liquid on a scale from 0-14
-`sulfites`             Amount of preservative ($SO_2$) for antioxidant and antibacterial properties in grams per liter
-`Alcohol`              Percent of alcohol content in the wine sample
---------               ------------
-***
-
+<details>
+  <summary> Click to get a glimpse of the Wine Dataset </summary>
+```{r, echo=FALSE, message=FALSE, eval=TRUE}
+# Table for Dataset
+w_mean_seq <- round(colMeans(wine), digits = 2)
+sample_number_w <- c((1:6497), "Means")
+wine_w_mean <- rbind(wine, w_mean_seq) %>% cbind(sample_number_w) 
+wine_w_mean_num <- wine_w_mean[, c(15, 13, 14, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)]
+colnames(wine_w_mean_num) = c("Sample Number", "Type", "Like", "Quality","Fixed Acidity", "Volatile Acidity", "Citric Acid", "Residual Sugar", "Chlorides", "Free Sulfur Dioxide", "Total Sulfur Dioxide", "Density", "pH", "Sulfites", "Alcohol")
+w_kbl <- kable(wine_w_mean_num[c(sample(1:6497, 10), 6498), ], align = "lllcccccccrrr", caption = " Wine Dataset", row.names = F) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive", fixed_thead = T)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive", fixed_thead = T)) %>% row_spec(11, bold = T, color = "white", background = "black", hline_after = T)  %>% footnote(symbol = c("10 random wines chosen from the 6497 samples with the means of the dataset calculated at the bottom"))
+w_kbl
+```
+</details>  
+\
+The numerical variables were given in grams per liter or per milliter, besides alcohol and density, which came in percentages. Since the variables were given on different scales, for our analysis, we needed to use a method called min-max to create a dataset with normalized data. By using min-max normalization, we change our maximum observation in that column to a new value of 1 and the minimum of that column to a new value of 0. Then, for the rest of the values, calculate that difference between the value and the minimum divided by the difference between the maximum and minimum to receive all of your values on a [0,1] scale.  
+\
  <details>
   <summary> Click here to expand the correlation of each variable with Quality </summary>
 ```{r, echo=FALSE, message=FALSE}
@@ -71,33 +97,32 @@ cor_kbl
 ```
 </details>
 
-# Scatterplots to Demonstrate the Correlations of the Five Strongest Predictors
-## Cannot figure out why geom_line() wont graph
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Scatterplots
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align="center"}
 #Showing alcohol levels against quality
 alcohol_summary <- twentypercent %>% group_by(quality) %>% summarise(alcohol = mean(alcohol))
 
-alcohol_scp <- ggplot(twentypercent, aes(x = quality, y = alcohol)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = alcohol_summary, aes(quality, alcohol), size = 2) + geom_point(data = alcohol_summary, size = 2, color = "yellow")
+alcohol_scp <- ggplot(twentypercent, aes(x = quality, y = alcohol)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = alcohol_summary, color = "gray32", size = 2) + geom_point(data = alcohol_summary, size = 3, color = "yellow")
 
 #Showing density levels against quality
 density_summary <- twentypercent %>% group_by(quality) %>% summarise(density = mean(density))
 
-density_scp <- ggplot(twentypercent, aes(x = quality, y = density)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = density_summary, size = 2, color = "yellow") + geom_point(data = density_summary, size = 2, color = "yellow")
+density_scp <- ggplot(twentypercent, aes(x = quality, y = density)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = density_summary, size = 2, color = "gray32") + geom_point(data = density_summary, size = 3, color = "yellow")
 
 #Showing volatile.acidity against quality
 volatile_acidity_summary <- twentypercent %>% group_by(quality) %>% summarise(volatile.acidity = mean(volatile.acidity))
 
-volatile_acidity_scp <- ggplot(twentypercent, aes(x = quality, y = volatile.acidity)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = volatile_acidity_summary) + geom_point(data = volatile_acidity_summary, size = 2, color = "yellow")
+volatile_acidity_scp <- ggplot(twentypercent, aes(x = quality, y = volatile.acidity)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = volatile_acidity_summary, color = "gray32", size = 2) + geom_point(data = volatile_acidity_summary, size = 3, color = "yellow")
 
 #Showing chlorides against quality
 chloride_summary <- twentypercent %>% group_by(quality) %>% summarise(chlorides = mean(chlorides))
 
-chlorides_scp <- ggplot(twentypercent, aes(x = quality, y = chlorides)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = chloride_summary, size = 2, color = "yellow") + geom_point(data = chloride_summary, size = 2, color = "yellow")
+chlorides_scp <- ggplot(twentypercent, aes(x = quality, y = chlorides)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = chloride_summary, size = 2, color = "gray32", size = 2) + geom_point(data = chloride_summary, size = 3, color = "yellow")
 
 #Showing citric acid against quality
 citric_acid_summary <- twentypercent %>% group_by(quality) %>% summarise(citric.acid = mean(citric.acid))
 
-citric_acid_scp <- ggplot(twentypercent, aes(x = quality, y = citric.acid)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = citric_acid_summary, size = 2) + geom_point(data = citric_acid_summary, size = 2, color = "yellow")
+citric_acid_scp <- ggplot(twentypercent, aes(x = quality, y = citric.acid)) + geom_point(alpha = 1/10, position = position_jitter(height = 0.2, width = 0.2), color = "blue3") + geom_line(data = citric_acid_summary, color = "gray32", size = 2) + geom_point(data = citric_acid_summary, size = 3, color = "yellow")
 
 #Plotting all 5 plots nicely on a grid
 plot_grid(alcohol_scp, density_scp, volatile_acidity_scp, chlorides_scp, citric_acid_scp, ncol = 2, nrow = 3)
@@ -109,13 +134,13 @@ plot_grid(alcohol_scp, density_scp, volatile_acidity_scp, chlorides_scp, citric_
 ```
 
 # Use Violin Plots or Density Ridges to show distributions over quality for Non-significant variables
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align="center"}
 #Density Ridge plots for the three negative non-significant predictors
-fixed_acidity_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = fixed.acidity, y = quality))
+fixed_acidity_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = fixed.acidity, y = as.factor(quality)))
 
-total_sulfur_dio_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = total.sulfur.dioxide, y = quality))
+total_sulfur_dio_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = total.sulfur.dioxide, y = as.factor(quality)))
 
-residual_sugar_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = residual.sugar, y = quality))
+residual_sugar_dens <- ggplot(wine_minmax) + geom_density_ridges(aes(x = residual.sugar, y = as.factor(quality)))
 
 plot_grid(fixed_acidity_dens, total_sulfur_dio_dens, residual_sugar_dens, ncol = 2, nrow = 2)
 
