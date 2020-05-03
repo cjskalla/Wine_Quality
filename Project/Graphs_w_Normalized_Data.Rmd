@@ -78,7 +78,29 @@ density_alcohol <- ggplot(w_data_minmax, aes(alcohol, density)) +
 
 density_alcohol
 ```
+
+# Density plots of wine quality, Red vs. White
+```{r}
+library(ggridges)
+library(patchwork)
+p1 <- ggplot(wine_data) + geom_bar(
+  aes(x = quality, y = ..prop.., fill = Type, group = Type), 
+  position = position_dodge(),
+  stat = 'count')
+p2 <- ggplot(wine_data) + geom_density_ridges(
+  aes(x = quality, y = Type, height = ..density.., group = Type, fill = Type),
+  alpha = 0.7)
+p1 / p2
 ```
+
+# Comparison of alcohol percentage by type
+
+```{r}
+wine_data %>% ggplot(aes(x = Type, y = alcohol, fill = Type)) +
+  geom_boxplot(alpha = 0.4) +
+  geom_violin(fill = NA, scale = "width", linetype = 2)
+```
+
 
 
 
