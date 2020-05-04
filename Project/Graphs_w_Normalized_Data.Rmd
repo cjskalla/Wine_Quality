@@ -17,7 +17,7 @@ white <- read.csv("data/winequality-white.csv", sep = ";")
 red <- read.csv("data/winequality-red.csv", sep = ";")
 
 #Combining and Clarifying Type
-wine_data <- rbind(white, red) %>% tibble::rowid_to_column("ID") %>% mutate(Type = ifelse(ID <= 4898, 1, 0)) %>% select(-ID)
+wine_data <- rbind(white, red) %>% tibble::rowid_to_column("ID") %>% mutate(Type = ifelse(ID <= 4898, "white", "red")) %>% select(-ID)
 
 #Making quality a factor for easier visualization
 wine_data$quality <- as.factor(wine_data$quality)
@@ -101,6 +101,149 @@ wine_data %>% ggplot(aes(x = Type, y = alcohol, fill = Type)) +
   geom_violin(fill = NA, scale = "width", linetype = 2)
 ```
 
+```{r}
+melted <- reshape2::melt(w_data_minmax, id.vars = c('quality', 'Type'), na.rm = TRUE)
+melted %>% group_by(quality, Type, variable) %>%
+  summarise(mean = mean(as.numeric(value))) %>%
+  ungroup() %>%
+  arrange(desc(mean)) %>%
+  ggplot() + geom_col(aes(x = quality, y = mean, fill = variable), 
+                      stat = 'identity',
+                      color = 'gray',
+                      position = position_dodge()) +
+  coord_flip() +
+  facet_wrap(~ Type)
+```
 
+```{r}
+melted %>% filter((Type == 'white' & quality == 9) | (Type == 'red' & quality == 8)) %>%
+  group_by(Type, quality, variable) %>%
+  summarise(mean = mean(as.numeric(value))) %>%
+  ungroup() %>%
+  arrange(desc(quality)) %>%
+  ggplot() + geom_col(aes(x = variable, y = mean, fill = variable), 
+                      stat = 'identity',
+                      color = 'gray',
+                      position = position_dodge()) +
+  coord_polar() +
+  facet_wrap(~Type) +
+  ggtitle("Feature Breakdown of Top Rated Reds and Whites")
+```
 
+# Classification Tree
 
+```{r}
+library(caret)
+library(rpart)
+library(e1071)
+
+# Changing all character features to factors
+wine_data.factors <- wine_data %>%
+  mutate_if(is.character, as.factor)
+
+# Set up our CV training methods
+train_control <- trainControl(method = "cv", 
+                              number = 10)
+
+# Create our train/test split.
+set.seed(42)
+train_index <- sample(1:nrow(wine_data.factors), 0.9 * nrow(wine_data))
+test_index <- setdiff(1:nrow(wine_data.factors), train_index)
+
+train_dat <- wine_data.factors[train_index, ]
+test_dat <- wine_data.factors[test_index, ]
+
+# Growing our first tree
+tree.model <- train(quality ~ ., data = train_dat, 
+                    method = "rpart", 
+                    trControl = train_control, 
+                    na.action = na.rpart)
+```
+
+```{r}
+library(rpart.plot)
+rpart.plot(tree.model$finalModel, yesno = 2)
+rpart.rules(tree.model$finalModel, cover = TRUE)
+conmat <- confusionMatrix(data = tree.model)
+print(conmat)
+```
+
+Single tree doesn't yield very high accuracy, but the single tree is nice for illustration. Let's try a random forest.
+
+```{r}
+library(randomForest)
+forest.model <- randomForest(quality ~ ., data = train_dat)
+```
+
+```{r}
+imp <- varImp(forest.model, scale = TRUE)
+imp <- data.frame(rownames(imp), imp$Overall)
+names(imp) <- c('Factor', 'Importance')
+
+imp <- imp %>% transform(Factor = reorder(Factor, Importance))
+ggplot(imp, aes(Factor, Importance)) + 
+  geom_bar(stat = 'identity', color = "blue", fill = "white") + 
+  coord_flip() +
+  ggtitle("Variable Importance in Determining Wine Quality")
+```
+
+```{r}
+(conm <- forest.model$confusion)
+```
+
+Better than the single tree! Let's visualize...
+
+```{r}
+library(viridis)
+# Drop the last column to make things easier
+conm.v <- conm[, -8]
+conm.v.perc <- (conm.v / apply(conm.v, 1, sum)) * 100
+melted <- reshape2::melt(conm.v.perc)
+
+ggplot(melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = viridis(10)[1],
+    mid = viridis(10)[5],
+    high = viridis(10)[10],
+    midpoint = 50,
+    limit = c(0, 100),
+    name = "Accuracy Percentage"
+  ) +
+  geom_text(aes(label = round(value, 1)), color = "white") +
+  xlab("Predicted Quality") + ylab("True Quality") + 
+  ggtitle("Confusion Matrix for Random Forest Predictions") +
+  scale_x_continuous(breaks = seq(3, 9), labels = seq(3, 9), expand = c(0,0)) +
+  scale_y_continuous(breaks = seq(3, 9), labels = seq(3, 9), expand = c(0,0))
+```
+
+And try it out on our holdout test data...
+
+```{r}
+preds <- predict(forest.model, test_dat)
+(conm <- confusionMatrix(preds, test_dat$quality))
+```
+
+```{r}
+conm.v <- conm$table
+conm.v.perc <- (conm.v / apply(conm.v, 1, sum)) * 100
+melted <- reshape2::melt(conm.v.perc)
+
+ggplot(melted, aes(x = Prediction, y = Reference, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = viridis(10)[1],
+    mid = viridis(10)[5],
+    high = viridis(10)[10],
+    midpoint = 50,
+    limit = c(0, 100),
+    name = "Accuracy Percentage"
+  ) +
+  geom_text(aes(label = round(value, 1)), color = "white", na.rm = TRUE) +
+  xlab("Predicted Quality") + ylab("True Quality") + 
+  ggtitle("Confusion Matrix for Random Forest Predictions") +
+  scale_x_continuous(breaks = seq(3, 9), labels = seq(3, 9), expand = c(0,0)) +
+  scale_y_continuous(breaks = seq(3, 9), labels = seq(3, 9), expand = c(0,0))
+```
+
+Overall, not bad! Around 70% overall accuracy, and fairly high overall focused on the diagonal, and relatively low (or 0) percentage predictions further out from the diagonal.
